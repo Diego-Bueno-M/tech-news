@@ -48,7 +48,7 @@ def scrape_news(html_content):
     url = selector.css("link[rel=canonical]::attr(href)").get()
 
     title = selector.css("h1.entry-title::text").get()
-    if title == None:
+    if title is None:
         title = ''
     else:
         title = title.strip()
@@ -65,11 +65,11 @@ def scrape_news(html_content):
         comments_count = int(comments_count)
 
     summary = selector.css(".entry-content p").get()
-    if summary == None:
+    if summary is None:
         beautSummary = ''
     else:
         beautSummary = BeautifulSoup(summary, "lxml").text.strip()
-        
+
     tags = selector.css(".post-tags a::text").getall()
 
     category = selector.css(".label::text").get()
