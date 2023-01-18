@@ -4,6 +4,8 @@ from parsel import Selector
 from bs4 import BeautifulSoup
 import re
 
+from tech_news.database import create_news
+
 
 # Requisito 1
 def fetch(url):
@@ -45,21 +47,29 @@ def scrape_news(html_content):
 
     url = selector.css("link[rel=canonical]::attr(href)").get()
 
-    title = selector.css("h1.entry-title::text").get().strip()
+    title = selector.css("h1.entry-title::text").get()
+    if title == None:
+        title = ''
+    else:
+        title = title.strip()
 
     timestamp = selector.css(".meta-date::text").get()
 
     writer = selector.css(".author a::text").get()
 
     comments_count = selector.css("h5.title-block::text").get()
-    comments_count = re.sub('[^0-9]', '', comments_count)
-
+    comments_count = re.sub('[^0-9]', '', str(comments_count))
     if comments_count == '':
         comments_count = 0
+    else:
+        comments_count = int(comments_count)
 
     summary = selector.css(".entry-content p").get()
-    soup = BeautifulSoup(summary, 'html.parser')
-
+    if summary == None:
+        beautSummary = ''
+    else:
+        beautSummary = BeautifulSoup(summary, "lxml").text.strip()
+        
     tags = selector.css(".post-tags a::text").getall()
 
     category = selector.css(".label::text").get()
@@ -70,7 +80,7 @@ def scrape_news(html_content):
         "timestamp": timestamp,
         "writer": writer,
         "comments_count": comments_count,
-        "summary": soup.get_text().strip(),
+        "summary": beautSummary,
         "tags": tags,
         "category": category,
     }
@@ -80,3 +90,19 @@ def scrape_news(html_content):
 # Requisito 5
 def get_tech_news(amount):
     """Seu código deve vir aqui"""
+    base_url = "https://blog.betrybe.com/"
+    urls_list = []
+    news = []
+
+    while len(urls_list) < amount:
+        html_content = fetch(base_url)
+        urls_list.extend(scrape_updates(html_content))
+
+        if len(urls_list) < amount:
+            base_url = scrape_next_page_link(html_content)
+
+    for url in urls_list[:amount]:
+        news.append(scrape_news(fetch(url)))
+
+    create_news(news)
+    return news
